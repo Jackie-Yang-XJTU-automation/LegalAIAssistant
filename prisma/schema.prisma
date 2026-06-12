@@ -1,0 +1,172 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Case {
+  id          String   @id @default(cuid())
+  name        String
+  clientName  String
+  caseType    String   @default("")
+  summary     String   @default("")
+  status      String   @default("active") // active, closed, archived
+  riskLevel   String   @default("low") // low, medium, high
+  stage       String   @default("")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  parties    Party[]
+  sources    Source[]
+  events     Event[]
+  tasks      Task[]
+  deadlines  Deadline[]
+  evidences  Evidence[]
+  drafts     DocumentDraft[]
+  aiResults  AIResult[]
+  auditLogs  AuditLog[]
+}
+
+model Party {
+  id        String   @id @default(cuid())
+  caseId    String
+  name      String
+  role      String   // plaintiff, defendant, third_party, etc.
+  phone     String   @default("")
+  idNumber  String   @default("")
+  address   String   @default("")
+  notes     String   @default("")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  case Case @relation(fields: [caseId], references: [id], onDelete: Cascade)
+}
+
+model Source {
+  id          String   @id @default(cuid())
+  caseId      String
+  type        String   // text, image, pdf, audio
+  title       String   @default("")
+  content     String   @default("")
+  filePath    String   @default("")
+  ocrText     String   @default("")
+  status      String   @default("pending") // pending, processing, completed, failed
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  case       Case       @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  aiResults  AIResult[]
+}
+
+model Event {
+  id          String   @id @default(cuid())
+  caseId      String
+  date        String
+  description String
+  amount      String   @default("")
+  persons     String   @default("")
+  sourceIds   String   @default("") // comma-separated source IDs
+  confidence  String   @default("high") // high, medium, low
+  isConfirmed Boolean  @default(false)
+  tags        String   @default("")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  case Case @relation(fields: [caseId], references: [id], onDelete: Cascade)
+}
+
+model Task {
+  id          String   @id @default(cuid())
+  caseId      String
+  title       String
+  description String   @default("")
+  dueDate     String   @default("")
+  priority    String   @default("medium") // high, medium, low
+  status      String   @default("pending") // pending, in_progress, completed
+  isAIGenerated Boolean @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  case Case @relation(fields: [caseId], references: [id], onDelete: Cascade)
+}
+
+model Deadline {
+  id          String   @id @default(cuid())
+  caseId      String
+  title       String
+  date        String
+  type        String   @default("") // court, filing, appeal, evidence, payment, other
+  reminder7d  Boolean  @default(true)
+  reminder3d  Boolean  @default(true)
+  reminder1d  Boolean  @default(true)
+  reminderDay Boolean  @default(true)
+  isAIGenerated Boolean @default(false)
+  isConfirmed Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  case Case @relation(fields: [caseId], references: [id], onDelete: Cascade)
+}
+
+model Evidence {
+  id           String   @id @default(cuid())
+  caseId       String
+  name         String
+  type         String   @default("") // document, photo, audio, video, other
+  purpose      String   @default("")
+  source       String   @default("")
+  sourceIds    String   @default("")
+  isAIGenerated Boolean @default(false)
+  isConfirmed  Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  case Case @relation(fields: [caseId], references: [id], onDelete: Cascade)
+}
+
+model DocumentDraft {
+  id        String   @id @default(cuid())
+  caseId    String
+  type      String   // complaint, defense, evidence_list, opinion, letter, other
+  title     String
+  content   String   @default("")
+  status    String   @default("draft") // draft, final
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  case Case @relation(fields: [caseId], references: [id], onDelete: Cascade)
+}
+
+model AIResult {
+  id          String   @id @default(cuid())
+  caseId      String
+  sourceId    String
+  type        String   // event, task, deadline, evidence, summary, risk, missing
+  title       String
+  content     String   @default("")
+  jsonData    String   @default("") // structured AI output
+  confidence  String   @default("medium")
+  status      String   @default("pending") // pending, confirmed, modified, rejected
+  confirmedBy String   @default("")
+  confirmedAt DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  case   Case   @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  source Source @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  caseId    String
+  action    String   // create, update, delete, confirm, modify, reject, import
+  target    String   // case, event, task, deadline, evidence, source, ai_result
+  targetId  String   @default("")
+  detail    String   @default("")
+  createdAt DateTime @default(now())
+
+  case Case @relation(fields: [caseId], references: [id], onDelete: Cascade)
+}
