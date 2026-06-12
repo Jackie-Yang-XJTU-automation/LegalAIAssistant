@@ -22,6 +22,7 @@ export async function GET(
         },
         deadlines: { orderBy: { date: "asc" } },
         evidences: true,
+        sources: { orderBy: { createdAt: "desc" } },
       },
     });
 

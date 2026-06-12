@@ -9,7 +9,9 @@ const navItems = [
   { href: "/", label: "今日概览", icon: "📊" },
   { href: "/cases", label: "案件列表", icon: "📁" },
   { href: "/review", label: "待确认", icon: "✅" },
+  { href: "/settings", label: "设置", icon: "⚙️" },
 ];
+
 
 export function Navbar() {
   const pathname = usePathname();
